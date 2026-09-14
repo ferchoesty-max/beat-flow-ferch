@@ -1,3 +1,37 @@
+# Evidencia 10 de Septiembre 2026 - BeatFlow
+
+## 1. Carpetas y Estructura Creada
+
+```text
+beat-flow-ferch/
+├── .gitignore
+├── README.md
+├── index.html
+├── css/
+│   ├── styles.css
+│   └── theme.css
+├── js/
+│   ├── app.js
+│   ├── data/
+│   │   └── mock.data.js
+│   └── ui/
+│       └── home.ui.js
+└── docs/
+    └── Evidencia10Sep.md
+```
+
+### Carpetas creadas:
+- `css/`
+- `js/`
+- `js/data/`
+- `js/ui/`
+- `docs/`
+
+---
+
+## 2. Código HTML (`index.html`)
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -126,3 +160,31 @@
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
+```
+
+---
+
+## 3. Configuración `.gitignore`
+
+```gitignore
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.temp
+```
