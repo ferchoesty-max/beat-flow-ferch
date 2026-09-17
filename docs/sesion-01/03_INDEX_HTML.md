@@ -1,3 +1,18 @@
+# BeatFlow — index.html
+
+[⬅ Documentación](../README.md) · [🏠 BeatFlow](../../README.md) · [📚 Índice general](../../../../README.md) · [◀ Anterior](./09_GITIGNORE.md) · [Siguiente ▶](./04_THEME_CSS.md)
+
+---
+
+## Archivo real
+
+```text
+beatflow/index.html
+```
+
+## Código completo
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -16,7 +31,6 @@
   <title>BeatFlow</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@audius/sdk@latest/dist/sdk.min.js"></script>
 
   <link rel="stylesheet" href="./css/theme.css">
   <link rel="stylesheet" href="./css/styles.css">
@@ -291,3 +305,8 @@
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
+```
+
+---
+
+[⬅ Documentación](../README.md) · [🏠 BeatFlow](../../README.md) · [📚 Índice general](../../../../README.md) · [◀ Anterior](./09_GITIGNORE.md) · [Siguiente ▶](./04_THEME_CSS.md)
