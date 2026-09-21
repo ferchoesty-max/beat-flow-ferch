@@ -7,23 +7,17 @@ import {
   renderHome,
 } from './ui/home.ui.js'
 
-const app =
-  document.querySelector('#app')
+// Import Nuevo
+import { renderSearch } from './ui/search.ui.js'
+import { renderEmpty, renderError, renderLoading } from './ui/states.ui.js'
 
-const playerTitle =
-  document.querySelector('#player-title')
+const app = document.querySelector('#app')
 
-const playerArtist =
-  document.querySelector('#player-artist')
-
-const playerCover =
-  document.querySelector('#player-cover')
-
-const playButton =
-  document.querySelector('#play-button')
-
-const globalSearch =
-  document.querySelector('#global-search')
+const playerTitle = document.querySelector('#player-title')
+const playerArtist = document.querySelector('#player-artist')
+const playerCover = document.querySelector('#player-cover')
+const playButton = document.querySelector('#play-button')
+const globalSearch = document.querySelector('#global-search')
 
 const allTracks = [
   ...trendingTracks,
@@ -32,16 +26,108 @@ const allTracks = [
 
 const state = {
   currentView: 'home',
-  currentTrack: trendingTracks[0],
+  currentTrack: null,
+  trendingTracks: [],
   isPlaying: false,
+  // parametros nuevo
+  searchResults: [],
+  searchQuery: ''
 }
 
-function initializeApp() {
-  renderCurrentView()
+async function initializeApp() {
+  //renderCurrentView()
   registerNavigationEvents()
   registerGlobalEvents()
-  updatePlayer()
+  //updatePlayer()
+  //updateNavigationStyles()
+  await loadHome()
+}
+
+async function loadHome() {
+  state.currentView = 'home'
+  renderLoading({
+    target: app,
+    message: 'Cargando Tendencias...'
+  })
   updateNavigationStyles()
+  try{
+    state.trendingTracks = await getTrendingTracks()
+    if (state.trendingTracks.length === 0) {
+      renderEmpty({
+        target: app,
+        title: 'No hay tendencias disponibles',
+        message: 'Audios no tiene tendencias disponibles'
+      })
+    }
+    renderHome ({
+      target: app,
+      trendingTracks: state.trendingTracks,
+      recentlyPlayedTracks: state.trendingTracks.slice(0,4)
+    })
+    if (!state.currentTrack) {
+      state.currentTrack = state.trendingTracks[0]
+      updatePlayer()
+    }
+  } catch(error){
+    console.error(error)
+    renderError({
+      target: app,
+      message: 'No pudimos obtener las canciones desde audios',
+      onRetry: loadHome
+    })
+  }
+}
+
+async function executeSearch(query) {
+  const normalizeQuery = query.trim()
+  state.currentView = 'search'
+  state.searchQuery = normalizeQuery
+  updateNavigationStyles()
+  if (normalizeQuery.length < 2) {
+    renderEmpty({
+      target: app,
+      title: 'Escribe una busqueda',
+      message: 'Utiliza al menos 2 caracteres para la busqueda'
+    })
+    return
+  }
+  renderLoading ({
+    target: app,
+    message: `Buscando "${normalizeQuery}"`
+  })
+  try {
+    state.searchResults = await searchTracks(normalizeQuery)
+    if (state.searchResults.length === 0) {
+      renderEmpty({
+        target: app,
+        title: 'Sin resultados',
+        message: `No encontramos canciones para "${normalizeQuery}"`
+      })
+      return
+    }
+    renderSearch ({
+      target: app,
+      query: normalizeQuery,
+      tracks: state.searchResults
+    })
+  } catch (error) {
+    console.error(error)
+    renderError({
+      target: app,
+      message: 'No se pudo realizar la busqueda',
+      onRetry: () => executeSearch(normalizeQuery)
+    })
+  }
+}
+
+function renderLibraryPlaceholder() {
+  state.currentView = 'library'
+  updateNavigationStyles()
+  renderEmpty({
+    target: app,
+    title: 'Proximamente...',
+    message: 'Canciones Favoritas, Historial y Preferencias'
+  })
 }
 
 function renderCurrentView() {
@@ -123,13 +209,28 @@ function renderPlaceholderView(view) {
 }
 
 function registerNavigationEvents() {
-  document
-    .querySelectorAll('[data-view]')
-    .forEach((button) => {
-      button.addEventListener(
-        'click',
-        () => {
-          navigateTo(button.dataset.view)
+  document.querySelectorAll('[data-view]').forEach((button) => {
+      button.addEventListener('click',() => {
+          const view = button.dataset.view
+          if (view === 'home') {
+            loadHome()
+            return
+          }
+          if (view === 'library') {
+            renderLibraryPlaceholder()
+            return
+          }
+          if (view === 'search') {
+            state.currentView = 'search'
+            updateNavigationStyles()
+            globalSearch()
+            renderEmpty({
+              target: app,
+              title: 'Busca tu musica favorita',
+              message: 'Escribe una cancion o artista en el buscador'
+            })
+            return
+          }
         },
       )
     })
@@ -168,56 +269,42 @@ function updateNavigationStyles() {
 }
 
 function registerGlobalEvents() {
-  document.addEventListener(
-    'click',
-    (event) => {
-      const playTrackButton =
-        event.target.closest('.play-track')
+  document.addEventListener('click',(event) => {
+      const playTrackButton = event.target.closest('.play-track')
 
       if (!playTrackButton) {
         return
       }
-
-      selectTrack(
-        playTrackButton.dataset.trackId,
-      )
+      selectTrack(playTrackButton.dataset.trackId)
     },
   )
 
-  playButton.addEventListener(
-    'click',
-    togglePlayState,
-  )
+  globalSearch.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return
+    }
+    event.preventDefault()
+    executeSearch(globalSearch.value)
+  })
+  playButton.addEventListener('click', () => {
+    state.isPlaying = !state.isPlaying
+    updatePlayer()
+  })
+}
 
-  globalSearch.addEventListener(
-    'focus',
-    () => {
-      if (state.currentView !== 'search') {
-        navigateTo('search')
-      }
-    },
-  )
+function getVisibleTracks () {
+  return [...state.trendingTracks, ...state.searchResults]
 }
 
 function selectTrack(trackId) {
-  const selectedTrack =
-    allTracks.find(
-      (track) =>
-        track.id === trackId,
-    )
+  const track = getVisibleTracks().find((item) => item.id === trackId)
 
-  if (!selectedTrack) {
+  if (!track) {
     return
   }
 
-  state.currentTrack = selectedTrack
+  state.currentTrack = track
   state.isPlaying = true
-
-  updatePlayer()
-}
-
-function togglePlayState() {
-  state.isPlaying = !state.isPlaying
   updatePlayer()
 }
 
