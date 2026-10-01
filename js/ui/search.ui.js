@@ -1,4 +1,4 @@
-function createSearchRow(track) {
+function createSearchRow(track, isFav = false) {
   return `
     <article class="grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-2xl p-3 transition hover:bg-zinc-900">
       <img
@@ -14,17 +14,29 @@ function createSearchRow(track) {
         <p class="mt-1 text-xs text-zinc-600">${track.duration}</p>
       </div>
 
-      <button
-        type="button"
-        class="play-track grid h-11 w-11 place-items-center rounded-full bg-white text-black"
-        data-track-id="${track.id}"
-        aria-label="Seleccionar ${track.title}"
-      >▶</button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="favorite-track grid h-10 w-10 place-items-center rounded-full bg-zinc-800 text-white transition hover:scale-105"
+          data-track-id="${track.id}"
+          aria-label="${isFav ? 'Quitar ' + track.title + ' de favoritos' : 'Agregar ' + track.title + ' a favoritos'}"
+          aria-pressed="${isFav ? 'true' : 'false'}"
+        >
+          ${isFav ? '♥' : '♡'}
+        </button>
+
+        <button
+          type="button"
+          class="play-track grid h-11 w-11 place-items-center rounded-full bg-white text-black transition hover:scale-105"
+          data-track-id="${track.id}"
+          aria-label="Seleccionar ${track.title}"
+        >▶</button>
+      </div>
     </article>
   `
 }
 
-export function renderSearch({ target, query, tracks }) {
+export function renderSearch({ target, query, tracks, isFavorite = () => false }) {
   target.innerHTML = `
     <section>
       <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">Buscar</p>
@@ -32,7 +44,7 @@ export function renderSearch({ target, query, tracks }) {
       <p class="mt-2 text-sm text-zinc-500">${tracks.length} resultado(s)</p>
 
       <div class="mt-6 divide-y divide-white/5 rounded-3xl border border-white/10 bg-zinc-900/40 p-2">
-        ${tracks.map(createSearchRow).join('')}
+        ${tracks.map((track) => createSearchRow(track, isFavorite(track.id))).join('')}
       </div>
     </section>
   `

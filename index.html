@@ -88,12 +88,12 @@
           </p>
 
           <div class="space-y-2">
-            <button type="button" class="secondary-nav-item">
+            <button type="button" class="secondary-nav-item" data-view="library">
               <span>♡</span>
               <span>Favoritos</span>
             </button>
 
-            <button type="button" class="secondary-nav-item">
+            <button type="button" class="secondary-nav-item" data-view="library">
               <span>◷</span>
               <span>Escuchados recientemente</span>
             </button>
@@ -104,9 +104,9 @@
           class="mt-auto rounded-2xl border border-white/10
                  bg-zinc-900/80 p-4"
         >
-          <p class="font-semibold">BeatFlow v0.3.0</p>
+          <p class="font-semibold">BeatFlow v1.0.0</p>
           <p class="mt-1 text-sm text-zinc-500">
-            Primera versión visual.
+            Versión final con persistencia.
           </p>
         </div>
 
@@ -203,9 +203,11 @@
         </div>
 
         <button
+          id="player-favorite-button"
           type="button"
-          class="hidden text-xl text-zinc-500 sm:block"
+          class="favorite-track hidden text-xl text-zinc-400 transition hover:scale-110 hover:text-white sm:block"
           aria-label="Agregar a favoritos"
+          aria-pressed="false"
         >
           ♡
         </button>

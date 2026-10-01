@@ -22,6 +22,18 @@ import {
 } from './services/player.service.js'
 
 import {
+  addToHistory,
+  getFavorites,
+  getHistory,
+  getLastTrack,
+  getVolume,
+  isFavorite,
+  saveLastTrack,
+  saveVolume,
+  toggleFavorite,
+} from './services/storage.service.js'
+
+import {
   renderHome,
 } from './ui/home.ui.js'
 
@@ -34,6 +46,10 @@ import {
 } from './ui/search.ui.js'
 
 import {
+  renderLibrary,
+} from './ui/library.ui.js'
+
+import {
   renderEmpty,
   renderError,
   renderLoading,
@@ -43,34 +59,25 @@ const app =
   document.querySelector('#app')
 
 const globalSearch =
-  document.querySelector(
-    '#global-search',
-  )
+  document.querySelector('#global-search')
 
 const playButton =
-  document.querySelector(
-    '#play-button',
-  )
+  document.querySelector('#play-button')
 
 const previousButton =
-  document.querySelector(
-    '#previous-button',
-  )
+  document.querySelector('#previous-button')
 
 const nextButton =
-  document.querySelector(
-    '#next-button',
-  )
+  document.querySelector('#next-button')
 
 const progressRange =
-  document.querySelector(
-    '#progress-range',
-  )
+  document.querySelector('#progress-range')
 
 const volumeRange =
-  document.querySelector(
-    '#volume-range',
-  )
+  document.querySelector('#volume-range')
+
+const playerFavoriteButton =
+  document.querySelector('#player-favorite-button')
 
 const playerUI =
   createPlayerUI()
@@ -80,19 +87,55 @@ const state = {
   currentTrack: null,
   trendingTracks: [],
   searchResults: [],
+  favorites: [],
+  history: [],
   isPlaying: false,
 }
 
 async function initializeApp() {
+  state.favorites =
+    getFavorites()
+
+  state.history =
+    getHistory()
+
+  const savedVolume =
+    getVolume()
+
+  setVolume(savedVolume)
+
+  if (volumeRange) {
+    volumeRange.value = String(savedVolume)
+    playerUI.renderVolume(savedVolume)
+  }
+
   registerNavigationEvents()
   registerGlobalEvents()
   registerPlayerEvents()
 
-  setVolume(
-    Number(volumeRange.value),
+  await loadHome()
+
+  restoreLastTrack()
+}
+
+function restoreLastTrack() {
+  const track =
+    getLastTrack()
+
+  if (!track) {
+    return
+  }
+
+  state.currentTrack =
+    track
+
+  playerUI.renderTrack(
+    track,
   )
 
-  await loadHome()
+  playerUI.renderFavorite(
+    isFavorite(track.id),
+  )
 }
 
 async function loadHome() {
@@ -115,10 +158,10 @@ async function loadHome() {
       trendingTracks:
         state.trendingTracks,
       recentlyPlayedTracks:
-        state.trendingTracks.slice(
-          0,
-          4,
-        ),
+        state.history.length > 0
+          ? state.history.slice(0, 4)
+          : state.trendingTracks.slice(0, 4),
+      isFavorite,
     })
   } catch (error) {
     console.error(error)
@@ -178,6 +221,7 @@ async function executeSearch(query) {
       query: normalizedQuery,
       tracks:
         state.searchResults,
+      isFavorite,
     })
   } catch (error) {
     console.error(error)
@@ -194,12 +238,41 @@ async function executeSearch(query) {
   }
 }
 
+function getAllKnownTracks() {
+  const pool = [
+    ...state.trendingTracks,
+    ...state.searchResults,
+    ...state.favorites,
+    ...state.history,
+  ]
+
+  if (state.currentTrack) {
+    pool.push(state.currentTrack)
+  }
+
+  const seen = new Set()
+  return pool.filter((track) => {
+    if (!track?.id || seen.has(track.id)) {
+      return false
+    }
+    seen.add(track.id)
+    return true
+  })
+}
+
 function getActiveCollection() {
   if (
     state.currentView === 'search'
     && state.searchResults.length > 0
   ) {
     return state.searchResults
+  }
+
+  if (state.currentView === 'library') {
+    return [
+      ...state.favorites,
+      ...state.history,
+    ]
   }
 
   return state.trendingTracks
@@ -209,11 +282,18 @@ async function playTrack(trackId) {
   const tracks =
     getActiveCollection()
 
-  const track =
+  let track =
     tracks.find(
       (item) =>
         item.id === trackId,
     )
+
+  if (!track) {
+    track =
+      getAllKnownTracks().find(
+        (item) => item.id === trackId,
+      )
+  }
 
   if (!track) {
     return
@@ -228,8 +308,13 @@ async function playTrack(trackId) {
     return
   }
 
+  const queueTracks =
+    tracks.some((t) => t.id === trackId)
+      ? tracks
+      : [track, ...tracks]
+
   setQueue(
-    tracks,
+    queueTracks,
     track.id,
   )
 
@@ -241,8 +326,13 @@ async function loadAndPlayTrack(
 ) {
   try {
     state.currentTrack = track
+    state.history = addToHistory(track)
+    saveLastTrack(track)
 
     playerUI.renderTrack(track)
+    playerUI.renderFavorite(
+      isFavorite(track.id),
+    )
 
     const streamUrl =
       getTrackStreamUrl(
@@ -288,6 +378,82 @@ async function playPreviousTrack() {
   }
 
   await loadAndPlayTrack(track)
+}
+
+function handleFavorite(
+  trackId,
+) {
+  const track =
+    getAllKnownTracks().find(
+      (item) =>
+        item.id === trackId,
+    )
+
+  if (!track) {
+    return
+  }
+
+  state.favorites =
+    toggleFavorite(track)
+
+  const isFav =
+    isFavorite(track.id)
+
+  document
+    .querySelectorAll(
+      `.favorite-track[data-track-id="${track.id}"]`,
+    )
+    .forEach((btn) => {
+      btn.textContent =
+        isFav ? '♥' : '♡'
+      btn.setAttribute(
+        'aria-pressed',
+        String(isFav),
+      )
+      btn.setAttribute(
+        'aria-label',
+        isFav
+          ? `Quitar ${track.title} de favoritos`
+          : `Agregar ${track.title} a favoritos`,
+      )
+    })
+
+  if (
+    state.currentTrack?.id
+    === track.id
+  ) {
+    playerUI.renderFavorite(
+      isFav,
+    )
+  }
+
+  if (
+    state.currentView
+    === 'library'
+  ) {
+    renderLibraryView()
+  }
+}
+
+function renderLibraryView() {
+  state.currentView =
+    'library'
+
+  state.favorites =
+    getFavorites()
+
+  state.history =
+    getHistory()
+
+  renderLibrary({
+    target: app,
+    favorites:
+      state.favorites,
+    history:
+      state.history,
+  })
+
+  updateNavigationStyles()
 }
 
 function registerPlayerEvents() {
@@ -371,7 +537,7 @@ function registerNavigationEvents() {
               'search'
 
             updateNavigationStyles()
-            globalSearch.focus()
+            globalSearch?.focus()
 
             renderEmpty({
               target: app,
@@ -383,18 +549,7 @@ function registerNavigationEvents() {
           }
 
           if (view === 'library') {
-            state.currentView =
-              'library'
-
-            updateNavigationStyles()
-
-            renderEmpty({
-              target: app,
-              title:
-                'Biblioteca disponible en Sesión 4',
-              message:
-                'Aquí tendremos favoritos e historial.',
-            })
+            renderLibraryView()
           }
         },
       )
@@ -402,7 +557,7 @@ function registerNavigationEvents() {
 }
 
 function registerGlobalEvents() {
-  globalSearch.addEventListener(
+  globalSearch?.addEventListener(
     'keydown',
     (event) => {
       if (event.key !== 'Enter') {
@@ -420,22 +575,59 @@ function registerGlobalEvents() {
   document.addEventListener(
     'click',
     (event) => {
-      const button =
+      const favoriteButton =
+        event.target.closest(
+          '.favorite-track',
+        )
+
+      if (favoriteButton) {
+        handleFavorite(
+          favoriteButton.dataset.trackId,
+        )
+        return
+      }
+
+      const playButtonTarget =
         event.target.closest(
           '.play-track',
         )
 
-      if (!button) {
+      if (playButtonTarget) {
+        playTrack(
+          playButtonTarget.dataset.trackId,
+        )
         return
       }
 
-      playTrack(
-        button.dataset.trackId,
+      const exploreButton =
+        event.target.closest(
+          '#explore-button',
+        )
+
+      if (exploreButton) {
+        const trendingSection =
+          document.querySelector('h2')
+        trendingSection?.scrollIntoView({
+          behavior: 'smooth',
+        })
+      }
+    },
+  )
+
+  playerFavoriteButton?.addEventListener(
+    'click',
+    () => {
+      if (!state.currentTrack) {
+        return
+      }
+
+      handleFavorite(
+        state.currentTrack.id,
       )
     },
   )
 
-  playButton.addEventListener(
+  playButton?.addEventListener(
     'click',
     async () => {
       if (!state.currentTrack) {
@@ -450,17 +642,17 @@ function registerGlobalEvents() {
     },
   )
 
-  previousButton.addEventListener(
+  previousButton?.addEventListener(
     'click',
     playPreviousTrack,
   )
 
-  nextButton.addEventListener(
+  nextButton?.addEventListener(
     'click',
     playNextTrack,
   )
 
-  progressRange.addEventListener(
+  progressRange?.addEventListener(
     'input',
     () => {
       seekAudio(
@@ -471,14 +663,16 @@ function registerGlobalEvents() {
     },
   )
 
-  volumeRange.addEventListener(
+  volumeRange?.addEventListener(
     'input',
     () => {
-      setVolume(
+      const volume =
         Number(
           volumeRange.value,
-        ),
-      )
+        )
+
+      setVolume(volume)
+      saveVolume(volume)
     },
   )
 }
