@@ -8,13 +8,14 @@ const createTrackCard = (track) => {
                 loading="lazy"
                 >
                 <button 
+                type="button"
                 class="play-track absolute bottom-3 right-4 grid h-11 w-11 place-items-center rounded-full bg-white text-black opacity-0 shadow-xl transition group-hover:opacity-100 focus:opacity-100"
                 data-track-id="${track.id}"
                 aria-label="Seleccionar ${track.title}"
                 >
-                  ▶️
+                  ▶
                 </button>
-                <div class="absolute left-3 top-3 rounded-full bg-black/60 px-2 5 py-1 text-[10px] font-semibold uppercase">
+                <div class="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold uppercase">
                     ${track.genre}
                 </div>
             </div>
@@ -23,7 +24,6 @@ const createTrackCard = (track) => {
                 <p class="mt-1 truncate text-sm text-zinc-500">${track.artist}</p>
             </div>
         </article>
-
     `
 }
 
@@ -43,11 +43,12 @@ const createRecentlyPlayedRow = (track) => {
                 ${track.duration}
             </span>
             <button 
+                type="button"
                 class="play-track grid w-9 h-9 place-items-center rounded-full bg-zinc-800 text-white"
                 data-track-id="${track.id}"
                 aria-label="Seleccionar ${track.title}"
                 >
-                  ▶️
+                  ▶
                 </button>
         </article>
     `
@@ -76,7 +77,7 @@ export function renderHome({
                    bg-violet-400/10 px-3 py-1 text-xs font-semibold
                    text-violet-300"
           >
-            BeatFlow · v0.2.0
+            BeatFlow · v0.3.0
           </span>
 
           <h1

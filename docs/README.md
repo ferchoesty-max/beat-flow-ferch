@@ -10,9 +10,9 @@ Este directorio contiene toda la documentación necesaria para desarrollar BeatF
 
 | Sesión | Tema | Versión | Estado |
 |---:|---|---|---|
-| 1 | [UI/UX, estructura y layout responsive](./sesion-01/README.md) | `v0.1.0` | Disponible |
-| 2 | [API musical y búsqueda](./sesion-02/README.md) | `v0.2.0` | Pendiente |
-| 3 | [Reproductor musical](./sesion-03/README.md) | `v0.3.0` | Pendiente |
+| 1 | [UI/UX, estructura y layout responsive](./sesion-01/README.md) | `v0.1.0` | Completado |
+| 2 | [API musical y búsqueda](./sesion-02/README.md) | `v0.2.0` | Completado |
+| 3 | [Reproductor musical](./sesion-03/README.md) | `v0.3.0` | Completado |
 | 4 | [Biblioteca y persistencia](./sesion-04/README.md) | `v1.0.0` | Pendiente |
 
 ---
